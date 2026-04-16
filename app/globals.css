@@ -151,6 +151,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-input-focus: var(--input-focus);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -190,6 +191,7 @@
   --sidebar-accent-foreground: #f76382;
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: #f76382;
+  --input-focus: #1717fa;
 }
 
 .dark {
@@ -224,6 +226,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --input-focus: #3232fa;
 }
 
 @layer base {
