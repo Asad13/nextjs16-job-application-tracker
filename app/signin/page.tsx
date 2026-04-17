@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { z, ZodError } from 'zod';
-import { signIn } from '@/lib/auth-client';
+import { signIn } from '@/lib/auth/auth-client';
 
 type FormField = {
   id: 'email' | 'password';
