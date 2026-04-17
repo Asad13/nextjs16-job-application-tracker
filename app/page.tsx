@@ -32,7 +32,7 @@ export default function Home() {
         <section className="container mx-auto px-4 py-8 lg:py-16">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="mb-6 text-5xl font-bold sm:text-6xl">
-              A better way to track your job application.
+              A better way to track your job applications.
             </h1>
             <p className="text-muted-foreground mb-10 text-xl">
               Capture, organize, and manage your job search in one place.

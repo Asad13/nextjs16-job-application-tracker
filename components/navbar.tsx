@@ -1,7 +1,7 @@
 import { Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { User } from 'better-auth';
+import type { User } from '@/lib/auth/auth-server';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,11 +50,12 @@ const Navbar = ({ user }: NavbarProps) => {
                 <Avatar className="h-10 w-10">
                   <AvatarImage
                     src={user.image ?? ''}
-                    alt={user.name}
+                    alt={user.name + ' ' + user.lastName}
                     className="grayscale"
                   />
                   <AvatarFallback className="text-lg font-bold">
-                    {user.name.toUpperCase()[0]}
+                    {user.name.toUpperCase()[0] +
+                      user.lastName.toUpperCase()[0]}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>

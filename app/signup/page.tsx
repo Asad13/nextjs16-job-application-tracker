@@ -16,10 +16,10 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { z, ZodError } from 'zod';
-import { signUp } from '@/lib/auth-client';
+import { signUp } from '@/lib/auth/auth-client';
 
 type FormField = {
-  id: 'name' | 'email' | 'password' | 'confirmPassword';
+  id: 'firstName' | 'lastName' | 'email' | 'password' | 'confirmPassword';
   label: string;
   type: 'text' | 'email' | 'password';
   defaultValue?: '';
@@ -28,11 +28,18 @@ type FormField = {
 
 const formFields: FormField[] = [
   {
-    id: 'name',
-    label: 'Name',
+    id: 'firstName',
+    label: 'First Name',
     type: 'text',
     defaultValue: '',
-    placeholder: 'John Doe',
+    placeholder: 'John',
+  },
+  {
+    id: 'lastName',
+    label: 'Last Name',
+    type: 'text',
+    defaultValue: '',
+    placeholder: 'Doe',
   },
   {
     id: 'email',
@@ -59,7 +66,8 @@ const formFields: FormField[] = [
 
 const signUpSchema = z
   .strictObject({
-    name: z.string().min(1, 'Name is required'),
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
     email: z.email('Invalid email'),
     password: z.string().min(8, 'Min 8 characters'),
     confirmPassword: z.string(),
@@ -106,7 +114,8 @@ const Signup = () => {
     if (fieldId === 'confirmPassword') {
       const password = refMap.password.current?.value ?? '';
       const result = signUpSchema.safeParse({
-        name: 'a',
+        firstName: 'a',
+        lastName: 'z',
         email: 'a@a.com',
         password,
         confirmPassword: value,
@@ -160,7 +169,8 @@ const Signup = () => {
     try {
       await signUp.email(
         {
-          name: values.name,
+          name: values.firstName,
+          lastName: values.lastName,
           email: values.email,
           password: values.password,
         },
