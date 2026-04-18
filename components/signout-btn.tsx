@@ -23,7 +23,7 @@ const SignoutBtn = () => {
             await signOut({
               fetchOptions: {
                 onSuccess: () => {
-                  router.push('/signin');
+                  router.push('/auth/signin');
                   router.refresh();
                 },
                 onError: (ctx) => {

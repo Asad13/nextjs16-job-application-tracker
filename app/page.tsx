@@ -38,7 +38,7 @@ export default function Home() {
               Capture, organize, and manage your job search in one place.
             </p>
             <div className="flex flex-col items-center gap-4">
-              <Link href="/signup">
+              <Link href="/auth/signup">
                 <Button
                   size="lg"
                   className="bg-primary hover:bg-primary/90 h-12 cursor-pointer px-8 text-lg font-medium"

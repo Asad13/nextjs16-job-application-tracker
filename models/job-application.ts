@@ -74,7 +74,7 @@ const jobApplicationSchema = new Schema<IJobApplication>(
       required: true,
     },
     order: {
-      type: Number,
+      type: Schema.Types.Int32 as unknown as NumberConstructor,
       required: true,
       default: 0,
     },
