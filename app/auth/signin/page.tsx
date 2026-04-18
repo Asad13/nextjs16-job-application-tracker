@@ -123,7 +123,7 @@ const Signin = () => {
           password: values.password,
         },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
             router.push('/dashboard');
             router.refresh();
           },

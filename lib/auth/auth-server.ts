@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import dbConnect from '../db';
+import { initDefaultBoard } from '../init-default-board';
 
 const mongoose = await dbConnect();
 const client = mongoose.connection.getClient();
@@ -12,6 +13,16 @@ export const auth = betterAuth({
     process.env.NODE_ENV === 'production' ? { client } : {},
   ),
   emailAndPassword: { enabled: true, autoSignIn: false },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          console.log('Initilizing Deafult Board');
+          await initDefaultBoard(user.id);
+        },
+      },
+    },
+  },
   user: {
     modelName: 'users',
     fields: {
@@ -21,6 +32,11 @@ export const auth = betterAuth({
       lastName: {
         type: 'string',
         required: true,
+      },
+      isNewUser: {
+        type: 'boolean',
+        required: true,
+        defaultValue: true,
       },
     },
   },

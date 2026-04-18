@@ -176,7 +176,7 @@ const Signup = () => {
         },
         {
           onSuccess: () => {
-            router.push('/signin');
+            router.push('/auth/signin');
           },
           onError: (ctx) => {
             setFeedback(ctx.error.message ?? 'Registration unsuccessful');

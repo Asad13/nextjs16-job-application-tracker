@@ -79,7 +79,7 @@ const Navbar = ({ user }: NavbarProps) => {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Link href="/signin">
+            <Link href="/auth/signin">
               <Button
                 variant="ghost"
                 className="cursor-pointer px-4 py-5 font-bold text-gray-700 hover:text-black"
@@ -87,7 +87,7 @@ const Navbar = ({ user }: NavbarProps) => {
                 Log in
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/auth/signup">
               <Button className="bg-primary hover:bg-primary/90 cursor-pointer px-4 py-5 font-bold">
                 Start for free
               </Button>
