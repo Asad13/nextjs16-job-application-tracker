@@ -1,15 +1,19 @@
 import { Schema, Document, models, model, Types, Model } from 'mongoose';
+import { transformDoc } from '@/lib/db-helper-functions';
 
 export interface IColumn extends Document {
   name: string;
   boardId: Types.ObjectId;
   order: number;
   jobApplications: Types.ObjectId[];
+  colorLight: string;
+  colorDark: string;
+  icon: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type IColumnRet = Omit<IColumn, '_id'> & { id: Types.ObjectId };
+export type IColumnRet = Omit<IColumn, '_id' | '__v'> & { id: Types.ObjectId };
 
 const columnSchema = new Schema<IColumn>(
   {
@@ -30,15 +34,29 @@ const columnSchema = new Schema<IColumn>(
         ref: 'JobApplication',
       },
     ],
+    colorLight: {
+      type: String,
+      default: '#00b8db',
+    },
+    colorDark: {
+      type: String,
+      default: '#48dbf8',
+    },
+    icon: {
+      type: String,
+      default: 'Grid2X2',
+    },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (doc: Document, ret: Record<string, unknown>) => {
-        ret.id = ret._id;
-        delete ret._id;
-
-        return ret as IColumnRet;
+        return transformDoc<IColumnRet>(ret);
+      },
+    },
+    toObject: {
+      transform: (doc: Document, ret: Record<string, unknown>) => {
+        return transformDoc<IColumnRet>(ret);
       },
     },
   },
