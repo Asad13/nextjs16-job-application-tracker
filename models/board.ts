@@ -1,18 +1,27 @@
 import { Schema, Types, Document, models, model, type Model } from 'mongoose';
+import { transformDoc } from '@/lib/db-helper-functions';
 
 export interface IBoard extends Document {
   name: string;
+  description: string;
   userId: Types.ObjectId;
   columns: Types.ObjectId[];
+  isDefault: boolean;
+  colorLight: string;
+  colorDark: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type IBoardRet = Omit<IBoard, '_id'> & { id: Types.ObjectId };
+export type IBoardRet = Omit<IBoard, '_id' | '__v'> & { id: Types.ObjectId };
 
 const boardSchema = new Schema<IBoard>(
   {
     name: {
+      type: String,
+      required: true,
+    },
+    description: {
       type: String,
       required: true,
     },
@@ -27,15 +36,29 @@ const boardSchema = new Schema<IBoard>(
         ref: 'Column',
       },
     ],
+    isDefault: {
+      type: 'boolean',
+      default: false,
+    },
+    colorLight: {
+      type: String,
+      default: '#f76382',
+    },
+    colorDark: {
+      type: String,
+      default: '#f788a0',
+    },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (doc: Document, ret: Record<string, unknown>) => {
-        ret.id = ret._id;
-        delete ret._id;
-
-        return ret as IBoardRet;
+        return transformDoc<IBoardRet>(ret);
+      },
+    },
+    toObject: {
+      transform: (doc: Document, ret: Record<string, unknown>) => {
+        return transformDoc<IBoardRet>(ret);
       },
     },
   },
@@ -43,6 +66,10 @@ const boardSchema = new Schema<IBoard>(
 
 // Indexes
 boardSchema.index({ userId: 1 });
+boardSchema.index(
+  { userId: 1, isDefault: 1 },
+  { unique: true, name: 'uniq_user_default_board' },
+);
 
 export const Board =
   (models.Board as Model<IBoard>) || model<IBoard>('Board', boardSchema);

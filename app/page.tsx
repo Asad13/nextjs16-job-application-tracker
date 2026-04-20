@@ -1,7 +1,6 @@
-import Link from 'next/link';
-import { ArrowRight, Briefcase, CheckCircle2, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Briefcase, CheckCircle2, TrendingUp } from 'lucide-react';
 import ImageTabs from '@/components/image-tabs';
+import DashbaordCtaBtn from '@/components/dashboard-cta-btn';
 
 const features = [
   {
@@ -38,14 +37,7 @@ export default function Home() {
               Capture, organize, and manage your job search in one place.
             </p>
             <div className="flex flex-col items-center gap-4">
-              <Link href="/auth/signup">
-                <Button
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 h-12 cursor-pointer px-8 text-lg font-medium"
-                >
-                  Start for free <ArrowRight className="-mb-0.5 ml-2" />
-                </Button>
-              </Link>
+              <DashbaordCtaBtn />
               <p className="text-muted-foreground text-sm">
                 Free forever. No credit card required.
               </p>

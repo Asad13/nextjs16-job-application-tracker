@@ -1,4 +1,5 @@
 import { Schema, models, model, Document, Types, Model } from 'mongoose';
+import { transformDoc } from '@/lib/db-helper-functions';
 
 export const JOB_APPLICATION_STATUSES = [
   'applied',
@@ -31,7 +32,7 @@ export interface IJobApplication extends Document {
   updatedAt: Date;
 }
 
-export type IJobApplicationRet = Omit<IJobApplication, '_id'> & {
+export type IJobApplicationRet = Omit<IJobApplication, '_id' | '__v'> & {
   id: Types.ObjectId;
 };
 
@@ -103,10 +104,12 @@ const jobApplicationSchema = new Schema<IJobApplication>(
     timestamps: true,
     toJSON: {
       transform: (doc: Document, ret: Record<string, unknown>) => {
-        ret.id = ret._id;
-        delete ret._id;
-
-        return ret as IJobApplicationRet;
+        return transformDoc<IJobApplicationRet>(ret);
+      },
+    },
+    toObject: {
+      transform: (doc: Document, ret: Record<string, unknown>) => {
+        return transformDoc<IJobApplicationRet>(ret);
       },
     },
   },
