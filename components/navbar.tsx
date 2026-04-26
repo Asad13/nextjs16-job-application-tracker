@@ -33,11 +33,12 @@ const Navbar = ({ user }: NavbarProps) => {
       <>
         {user ? (
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button className="bg-primary hover:bg-primary/90 cursor-pointer px-4 py-5 font-bold">
-                Dashboard
-              </Button>
-            </Link>
+            <Button
+              render={<Link href="/dashboard" />}
+              className="bg-primary hover:bg-primary/90 cursor-pointer px-4 py-5 font-bold"
+            >
+              Dashboard
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -79,19 +80,19 @@ const Navbar = ({ user }: NavbarProps) => {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Link href="/auth/signin">
-              <Button
-                variant="ghost"
-                className="cursor-pointer px-4 py-5 font-bold text-gray-700 hover:text-black"
-              >
-                Log in
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button className="bg-primary hover:bg-primary/90 cursor-pointer px-4 py-5 font-bold">
-                Start for free
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              className="cursor-pointer px-4 py-5 font-bold text-gray-700 hover:text-black"
+              render={<Link href="/auth/signin" />}
+            >
+              Log in
+            </Button>
+            <Button
+              className="bg-primary hover:bg-primary/90 cursor-pointer px-4 py-5 font-bold"
+              render={<Link href="/auth/signup" />}
+            >
+              Start for free
+            </Button>
           </div>
         )}
       </>

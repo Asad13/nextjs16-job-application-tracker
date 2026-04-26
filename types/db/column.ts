@@ -11,3 +11,8 @@ export interface Column {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface UpdateColumnOrder {
+  id: string;
+  order: number;
+}
