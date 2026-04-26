@@ -1,5 +1,6 @@
 import { Schema, Document, models, model, Types, Model } from 'mongoose';
 import { transformDoc } from '@/lib/db-helper-functions';
+import { UpdateColumnOrder } from '@/types/db/column';
 
 export interface IColumn extends Document {
   name: string;
@@ -13,9 +14,13 @@ export interface IColumn extends Document {
   updatedAt: Date;
 }
 
+interface IColumnExtended extends Model<IColumn> {
+  updateOrders(_updateColumns: UpdateColumnOrder[]): Promise<void>;
+}
+
 export type IColumnRet = Omit<IColumn, '_id' | '__v'> & { id: Types.ObjectId };
 
-const columnSchema = new Schema<IColumn>(
+const columnSchema = new Schema<IColumn, IColumnExtended>(
   {
     name: { type: String, required: true },
     boardId: {
@@ -28,12 +33,11 @@ const columnSchema = new Schema<IColumn>(
       // required: true, // Not needed - automatically added during create in pre save hook
       // default: 0, // Not needed - handled in pre save hook
     },
-    jobApplications: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'JobApplication',
-      },
-    ],
+    jobApplications: {
+      type: [Schema.Types.ObjectId],
+      ref: 'JobApplication',
+      default: [],
+    },
     colorLight: {
       type: String,
       default: '#00b8db',
@@ -59,6 +63,57 @@ const columnSchema = new Schema<IColumn>(
         return transformDoc<IColumnRet>(ret);
       },
     },
+    statics: {
+      async updateOrders(updateColumns: UpdateColumnOrder[]) {
+        const columns = (await this.find({
+          _id: { $in: updateColumns.map((col) => col.id) },
+        }).select('boardId order')) as Pick<
+          IColumn,
+          '_id' | 'boardId' | 'order'
+        >[];
+
+        if (columns.length <= 1) throw new Error('No column found');
+
+        const boardId = columns[0].boardId;
+        for (let i = 1; i < columns.length; i++) {
+          if (!columns[i].boardId.equals(boardId)) {
+            throw new Error('Columns must belong to the same board');
+          }
+        }
+
+        const session = await this.startSession();
+
+        try {
+          session.startTransaction();
+
+          // Assign temp negative values to column order
+          for (const column of columns) {
+            await this.findByIdAndUpdate(
+              column._id,
+              { order: -1 * column.order - 1 },
+              { session },
+            );
+          }
+
+          // Update column order
+          for (const column of updateColumns) {
+            await this.findByIdAndUpdate(
+              column.id,
+              { order: column.order },
+              { session },
+            );
+          }
+
+          await session.commitTransaction();
+        } catch (error) {
+          console.error(error);
+          await session.abortTransaction();
+          throw error;
+        } finally {
+          await session.endSession();
+        }
+      },
+    },
   },
 );
 
@@ -74,42 +129,12 @@ columnSchema.pre('save', async function () {
   column.order = lastColumn ? lastColumn.order + 1 : 0;
 });
 
-// Static Methods
-columnSchema.statics.swapOrder = async function (
-  columnAId: Types.ObjectId | string,
-  columnBId: Types.ObjectId | string,
-) {
-  const [colA, colB] = (await this.find({
-    _id: { $in: [columnAId, columnBId] },
-  }).select('boardId order')) as Pick<IColumn, '_id' | 'boardId' | 'order'>[];
-
-  if (!colA || !colB) throw new Error('One or both columns not found');
-
-  if (!colA.boardId.equals(colB.boardId))
-    throw new Error('Columns must belong to the same board');
-
-  const TEMP_ORDER = -1;
-  const session = await this.startSession();
-  session.startTransaction();
-  try {
-    await this.findByIdAndUpdate(colA._id, { order: TEMP_ORDER }, { session });
-    await this.findByIdAndUpdate(colB._id, { order: colA.order }, { session });
-    await this.findByIdAndUpdate(colA._id, { order: colB.order }, { session });
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
-};
-
 // Indexes
-columnSchema.index({ boardId: 1 });
 columnSchema.index(
   { boardId: 1, order: 1 },
   { unique: true, name: 'uniq_board_column_order' },
 ); // Enforcing unique order for every column in a board
 
 export const Column =
-  (models.Column as Model<IColumn>) || model<IColumn>('Column', columnSchema);
+  (models.Column as IColumnExtended) ||
+  model<IColumn, IColumnExtended>('Column', columnSchema);

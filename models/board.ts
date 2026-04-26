@@ -30,12 +30,11 @@ const boardSchema = new Schema<IBoard>(
       ref: 'User',
       required: true,
     },
-    columns: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Column',
-      },
-    ],
+    columns: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Column',
+      default: [],
+    },
     isDefault: {
       type: 'boolean',
       default: false,
@@ -65,7 +64,6 @@ const boardSchema = new Schema<IBoard>(
 );
 
 // Indexes
-boardSchema.index({ userId: 1 });
 boardSchema.index(
   { userId: 1, isDefault: 1 },
   { unique: true, name: 'uniq_user_default_board' },

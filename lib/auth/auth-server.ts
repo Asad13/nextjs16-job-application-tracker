@@ -8,10 +8,7 @@ const client = mongoose.connection.getClient();
 const db = client.db(); //mongoose.connection.db!;
 
 export const auth = betterAuth({
-  database: mongodbAdapter(
-    db,
-    process.env.NODE_ENV === 'production' ? { client } : {},
-  ),
+  database: mongodbAdapter(db, { client }),
   emailAndPassword: { enabled: true, autoSignIn: false },
   databaseHooks: {
     user: {
@@ -42,6 +39,8 @@ export const auth = betterAuth({
   },
   session: {
     modelName: 'sessions',
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
   },
   account: {
     modelName: 'accounts',

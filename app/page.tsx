@@ -2,6 +2,7 @@ import { Briefcase, CheckCircle2, TrendingUp } from 'lucide-react';
 import ImageTabs from '@/components/image-tabs';
 import HomeCtaBtn from '@/components/home-cta-btn';
 import { getSession } from '@/lib/auth/helper-functions';
+import { Suspense } from 'react';
 
 const features = [
   {
@@ -40,7 +41,9 @@ export default async function Home() {
               Capture, organize, and manage your job search in one place.
             </p>
             <div className="flex flex-col items-center gap-4">
-              <HomeCtaBtn isLoggedIn={session != null} />
+              <Suspense fallback={<span>Loading...</span>}>
+                <HomeCtaBtn isLoggedIn={session != null} />
+              </Suspense>
               <p className="text-muted-foreground text-sm">
                 Free forever. No credit card required.
               </p>
