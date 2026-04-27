@@ -1,5 +1,5 @@
 import { Schema, Types, Document, models, model, type Model } from 'mongoose';
-import { transformDoc } from '@/lib/db-helper-functions';
+import { transformDoc } from '@/lib/db/helper-functions';
 
 export interface IBoard extends Document {
   name: string;

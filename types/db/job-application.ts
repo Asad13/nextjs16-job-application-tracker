@@ -17,14 +17,16 @@ export interface JobApplication {
   description?: string;
 }
 
-export type CreateJobApplication = Omit<
-  JobApplication,
-  'id' | 'tags' | 'order' | 'status' | 'appliedDate'
-> & {
-  tags?: string;
-};
+// export type CreateJobApplication = Omit<
+//   JobApplication,
+//   'id' | 'tags' | 'order' | 'status' | 'appliedDate'
+// > & {
+//   tags?: string;
+// };
 
-export interface UpdateJob {
+// export type UpdateJobApplication = Partial<CreateJobApplication>;
+
+export interface UpdateJobOrder {
   id: string;
   columnId: string;
   order: number;

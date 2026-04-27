@@ -1,12 +1,23 @@
 'use server';
 
 import { cacheLife, cacheTag } from 'next/cache';
-import { transformDoc } from '@/lib/db-helper-functions';
-import { Board } from '@/models';
+import { transformDoc } from '@/lib/db/helper-functions';
+import { Board } from '@/lib/db/models';
 import { Board as IBoard } from '@/types/db/board';
 import { Column as IColumn } from '@/types/db/column';
 import { JobApplication as IJobApplication } from '@/types/db/job-application';
-import dbConnect from '@/lib/db';
+import dbConnect from '@/lib/db/connect';
+import { Types } from 'mongoose';
+
+export const isDefaultBoard = async (id: Types.ObjectId): Promise<boolean> => {
+  try {
+    const board = await Board.findById(id).lean().select({ isDefault: 1 });
+    if (!board) throw new Error('No board found');
+    return board.isDefault;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const getDefaultBoard = async (
   userId: string,

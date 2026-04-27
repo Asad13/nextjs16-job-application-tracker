@@ -1,6 +1,6 @@
 import { Schema, models, model, Document, Types, Model } from 'mongoose';
-import { transformDoc } from '@/lib/db-helper-functions';
-import { UpdateJob } from '@/types/db/job-application';
+import { transformDoc } from '@/lib/db/helper-functions';
+import { UpdateJobOrder } from '@/types/db/job-application';
 import { Column } from './column';
 
 export const JOB_APPLICATION_STATUSES = [
@@ -35,7 +35,7 @@ export interface IJobApplication extends Document {
 }
 
 export interface IJobApplicationExtended extends Model<IJobApplication> {
-  pdateColumnAndOrder(_updatedJobs: UpdateJob[]): Promise<void>;
+  pdateColumnAndOrder(_updatedJobs: UpdateJobOrder[]): Promise<void>;
 }
 
 export type IJobApplicationRet = Omit<IJobApplication, '_id' | '__v'> & {
@@ -133,7 +133,7 @@ const jobApplicationSchema = new Schema<
       },
     },
     statics: {
-      async updateColumnAndOrder(updatedJobs: UpdateJob[]) {
+      async updateColumnAndOrder(updatedJobs: UpdateJobOrder[]) {
         const jobs = (await this.find({
           _id: { $in: updatedJobs.map((ujob) => ujob.id) },
         }).select({ boardId: 1, columnId: 1, order: 1 })) as Pick<

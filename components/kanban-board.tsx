@@ -11,8 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
-import CreateJobApplicationDialog from './create-job-application-dialog';
+import { ExternalLink, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { ReactNode, startTransition, useEffect, useRef, useState } from 'react';
 import {
@@ -24,18 +23,24 @@ import {
 import { CollisionPriority } from '@dnd-kit/abstract';
 import { move } from '@dnd-kit/helpers';
 import { useSortable } from '@dnd-kit/react/sortable';
-import { JobApplication, UpdateJob } from '@/types/db/job-application';
+import { JobApplication, UpdateJobOrder } from '@/types/db/job-application';
 import { updateColumnOrders } from '@/actions/column';
-import { updateJobColumnAndOrder } from '@/actions/job-applications';
+import { deleteJob, updateJobColumnAndOrder } from '@/actions/job-application';
+import JobApplicationDialog, {
+  JobData,
+  Purpose,
+} from './job-application-dialog';
 
 interface KanbanBoardProps {
   board: Board;
 }
 
 const DroppabaleItem = ({
+  boardId,
   columnId,
   job,
 }: {
+  boardId: string;
   columnId: string;
   job: JobApplication;
 }) => {
@@ -46,12 +51,148 @@ const DroppabaleItem = ({
     accept: 'item',
     group: columnId,
   });
+  const [open, setOpen] = useState<boolean>(false);
+  const [purpose, setPurpose] = useState<Purpose>('view');
+  const { tags, ...rest } = job;
+  const jobData = rest as JobData;
+  if (tags && tags.length > 0) {
+    jobData.tags = tags.join(', ');
+  }
   return (
-    <Card ref={ref} className="w-full shrink-0 rounded-md p-4 shadow-md">
-      <CardHeader>
-        <CardTitle>{job.title}</CardTitle>
-      </CardHeader>
-    </Card>
+    <>
+      <JobApplicationDialog
+        boardId={boardId}
+        columnId={columnId}
+        jobData={jobData}
+        open={open}
+        setOpen={setOpen}
+        showTrigger={false}
+        purpose={purpose}
+        setPurpose={setPurpose}
+      />
+      <Card
+        ref={ref}
+        role="button"
+        className="w-full shrink-0 cursor-pointer rounded-md px-2 py-4 shadow-md hover:bg-gray-200 focus:bg-gray-200 active:not-aria-[haspopup]:translate-y-px"
+        onClick={(event) => {
+          event.stopPropagation();
+          setPurpose('view');
+          setOpen(true);
+        }}
+      >
+        <CardHeader className="flex items-start justify-between">
+          <div>
+            <CardTitle className="line-clamp-1 text-sm font-semibold text-black">
+              {job.title}
+            </CardTitle>
+            <p className="text-primary line-clamp-1">{job.company}</p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 cursor-pointer rounded-full text-black hover:bg-black/20 focus-visible:bg-black/20"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                />
+              }
+            >
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                className="cursor-pointer text-sky-600 hover:bg-sky-200 not-data-[variant=destructive]:hover:**:text-sky-200 focus:bg-sky-200 not-data-[variant=destructive]:focus:**:text-sky-600"
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setPurpose('edit');
+                      setOpen(true);
+                    }}
+                  />
+                }
+              >
+                <Pencil className="-mt-0.5 mr-2 h-4 w-4" />
+                <span>Edit Job</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                className="cursor-pointer"
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      startTransition(async () => {
+                        try {
+                          const result = await deleteJob(job.id);
+                          if (result.success) {
+                            console.log(result.message);
+                          } else {
+                            throw new Error(result.message);
+                          }
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      });
+                    }}
+                  />
+                }
+              >
+                <Trash2 className="-mt-0.5 mr-2 h-4 w-4" />
+                <span>Delete Job</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground line-clamp-3 text-sm">
+            {job.description}
+          </p>
+          {job?.tags && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {job.tags.map((tag, index) => (
+                <span
+                  key={`job-tag-${index}`}
+                  className="inline-block rounded-2xl bg-sky-200 px-2 py-0.5 text-xs leading-none font-semibold text-sky-600"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {job?.jobUrl && (
+            <Button
+              type="button"
+              variant="link"
+              className="flex-start mt-2 cursor-pointer p-0"
+              render={
+                <a
+                  href={job.jobUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Visit Job URL"
+                />
+              }
+              onClick={() => {
+                console.log('Show Job Details');
+              }}
+            >
+              <ExternalLink className="text-primary hover:text-primary/80 focus:text-primary/80 h-6 w-6" />
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
@@ -93,9 +234,10 @@ const DroppableColumn = ({
             <DropdownMenuTrigger
               render={
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 cursor-pointer rounded-full text-white hover:bg-white/20"
+                  className="h-6 w-6 cursor-pointer rounded-full text-white hover:bg-white/20 focus-visible:bg-white/20"
                 />
               }
             >
@@ -162,12 +304,14 @@ const DroppableColumn = ({
           </DropdownMenu>
         </div>
       </CardHeader>
-      <CardContent className="flex h-100 flex-col items-center justify-start gap-4 overflow-y-auto rounded-b-lg bg-gray-50/50 py-4">
-        <CreateJobApplicationDialog
+      <CardContent
+        tabIndex={0}
+        className="no-scrollbar flex h-100 flex-col items-center justify-start gap-4 overflow-y-auto rounded-b-lg bg-gray-50/50 py-4 focus:border-none focus:outline-none"
+      >
+        <JobApplicationDialog
           boardId={boardId}
           columnId={column.id}
-          colorLight={column.colorLight}
-          colorDark={column.colorDark}
+          color={column.colorLight}
           open={open}
           setOpen={setOpen}
         />
@@ -202,7 +346,7 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
             columnId: string,
             jobApplications: JobApplication[],
           ]) => {
-            const movedJobs: UpdateJob[] = [];
+            const movedJobs: UpdateJobOrder[] = [];
             for (let i = 0; i < jobApplications.length; i++) {
               if (jobApplications[i].columnId !== columnId) {
                 movedJobs.push({
@@ -225,8 +369,8 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
         .flat();
 
       if (updatedJobs.length > 0) {
-        try {
-          startTransition(async () => {
+        startTransition(async () => {
+          try {
             const feedback = await updateJobColumnAndOrder(
               board.id,
               updatedJobs,
@@ -237,11 +381,11 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
             } else {
               throw new Error(feedback.message);
             }
-          });
-        } catch (error) {
-          console.error(error);
-          setItems({ ...prevItems.current });
-        }
+          } catch (error) {
+            console.error(error);
+            setItems({ ...prevItems.current });
+          }
+        });
       }
     }
   }, [items, board.id, updatItem]);
@@ -265,8 +409,8 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
         ) as UpdateColumnOrder[];
 
       if (updateColumns.length > 0) {
-        try {
-          startTransition(async () => {
+        startTransition(async () => {
+          try {
             const feedback = await updateColumnOrders(board.id, updateColumns);
             setUpdateColumn(false);
             if (feedback.success) {
@@ -274,11 +418,11 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
             } else {
               throw new Error(feedback.message);
             }
-          });
-        } catch (error) {
-          console.error(error);
-          setColumns([...prevColumns.current]);
-        }
+          } catch (error) {
+            console.error(error);
+            setColumns([...prevColumns.current]);
+          }
+        });
       }
     }
   }, [columns, board.id, updateColumn]);
@@ -321,7 +465,12 @@ const KanbanBoard = ({ board }: KanbanBoardProps) => {
           {columns.map((column) => (
             <DroppableColumn key={column.id} boardId={board.id} column={column}>
               {items[column.id].map((job) => (
-                <DroppabaleItem key={job.id} columnId={column.id} job={job} />
+                <DroppabaleItem
+                  key={job.id}
+                  boardId={board.id}
+                  columnId={column.id}
+                  job={job}
+                />
               ))}
             </DroppableColumn>
           ))}
