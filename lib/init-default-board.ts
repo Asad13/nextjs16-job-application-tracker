@@ -1,5 +1,5 @@
-import dbConnect from './db';
-import { Board, Column } from '@/models';
+import dbConnect from './db/connect';
+import { Board, Column } from '@/lib/db/models';
 
 type ColumnFields = {
   name: string;

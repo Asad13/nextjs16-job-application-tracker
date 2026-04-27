@@ -1,11 +1,11 @@
 'use server';
 
-import { Board, Column } from '@/models';
+import { Board, Column } from '@/lib/db/models';
 import { FeedbackBase } from '@/types/api';
 import { UpdateColumnOrder } from '@/types/db/column';
 import { updateTag } from 'next/cache';
-import dbConnect from '@/lib/db';
-import { isAuthenticated } from '@/utils/server-utils';
+import dbConnect from '@/lib/db/connect';
+import { isAuthenticated } from '@/lib/utils/server-utils';
 
 export const updateColumnOrders = async (
   boardId: string,

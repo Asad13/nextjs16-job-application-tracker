@@ -1,5 +1,5 @@
 import { Schema, Document, models, model, Types, Model } from 'mongoose';
-import { transformDoc } from '@/lib/db-helper-functions';
+import { transformDoc } from '@/lib/db/helper-functions';
 import { UpdateColumnOrder } from '@/types/db/column';
 
 export interface IColumn extends Document {

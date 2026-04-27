@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { Plus } from 'lucide-react';
+import { Eye, Pencil, Plus } from 'lucide-react';
 import { Field, FieldGroup, FieldLabel, FieldDescription } from './ui/field';
 import { Input } from './ui/input';
 import {
@@ -28,14 +28,30 @@ import { ScrollArea } from './ui/scroll-area';
 import { Textarea } from './ui/textarea';
 import { Spinner } from './ui/spinner';
 import { z } from 'zod';
-import { createJobApplication } from '@/actions/job-applications';
+import {
+  createJobApplication,
+  updateJobApplication,
+} from '@/actions/job-application';
 import { FeedbackBase } from '@/types/api';
+import { UpdateJobApplicationInputType } from '@/lib/validations/job-application';
+import { Toggle } from './ui/toggle';
 
 type ErrorKey = 'required' | 'maxLength';
 type SchemaType = z.core.JSONSchema.StringSchema['type'] | undefined;
 
+type FieldId =
+  | 'title'
+  | 'company'
+  | 'position'
+  | 'salary'
+  | 'location'
+  | 'jobUrl'
+  | 'description'
+  | 'tags'
+  | 'notes';
+
 interface FormField {
-  id: string;
+  id: FieldId;
   type: 'text' | 'textarea' | 'select' | 'date';
   schemaType: SchemaType;
   label: string;
@@ -47,9 +63,7 @@ interface FormField {
   errors: Partial<Record<ErrorKey, string>>;
 }
 
-const asFormFields = <T extends FormField[][]>(fields: T) => fields;
-
-const formFields = asFormFields([
+const formFields: FormField[][] = [
   [
     {
       id: 'title',
@@ -194,9 +208,7 @@ const formFields = asFormFields([
       },
     },
   ],
-] as const);
-
-type FieldId = (typeof formFields)[number][number]['id'];
+];
 
 const plainFormFields = formFields.reduce((fields, formGroup) => {
   for (let i = 0; i < formGroup.length; i++) {
@@ -275,23 +287,65 @@ const formatError = (
   );
 };
 
-interface CreateJobApplicationDialogProps {
+export type JobData = UpdateJobApplicationInputType & { id: string };
+export type Purpose = 'view' | 'edit' | 'create';
+
+const DialogHeaderData: Record<
+  Purpose,
+  { title: string; description: string }
+> = {
+  view: {
+    title: 'Job Application Details',
+    description: 'Review the details of your job application.',
+  },
+  edit: {
+    title: 'Edit Job Application',
+    description: 'Update the details of your job application.',
+  },
+  create: {
+    title: 'Add Job Application',
+    description: 'Track a new job opportunity by filling in the details below.',
+  },
+};
+
+interface JobApplicationDialogProps {
   boardId: string;
   columnId: string;
-  colorLight: string;
-  colorDark: string;
+  jobData?: JobData;
+  color?: string;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
+  showTrigger?: boolean;
+  purpose?: Purpose;
+  setPurpose?: Dispatch<SetStateAction<Purpose>>;
 }
 
-const CreateJobApplicationDialog = ({
+const JobApplicationDialog = ({
   boardId,
   columnId,
-  colorLight,
+  jobData,
+  color,
   open,
   setOpen,
-}: CreateJobApplicationDialogProps) => {
+  showTrigger = true,
+  purpose = 'create',
+  setPurpose,
+}: JobApplicationDialogProps) => {
   const { data: fullSession } = useSession();
+
+  if (jobData && purpose !== 'create') {
+    formFields.forEach((fieldGroup) => {
+      fieldGroup.forEach((field) => {
+        field.defaultValue = jobData[field.id] ?? '';
+      });
+    });
+  } else {
+    formFields.forEach((fieldGroup) => {
+      fieldGroup.forEach((field) => {
+        field.defaultValue = '';
+      });
+    });
+  }
 
   const [feedback, setFeedBack] = useState<FeedbackBase | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -333,7 +387,8 @@ const CreateJobApplicationDialog = ({
 
   const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
-    // setSubmitting(true);
+
+    if (purpose === 'view') return;
 
     const values = Object.fromEntries(
       plainFormFields.map((field) => [
@@ -349,50 +404,88 @@ const CreateJobApplicationDialog = ({
       setErrors((prev) => ({ ...prev, ...errors }));
       return;
     }
+    startTransition(async () => {
+      try {
+        let result: FeedbackBase | null = null;
 
-    try {
-      // submit form
-      startTransition(async () => {
-        const result = await createJobApplication({
-          ...values,
-          boardId,
-          columnId,
-        });
+        if (purpose === 'create') {
+          result = await createJobApplication({
+            ...values,
+            boardId,
+            columnId,
+          });
+        } else if (jobData) {
+          result = await updateJobApplication(jobData.id, values);
+        }
 
-        setFeedBack({ ...result });
-        if (result.success) {
+        if (result) {
+          setFeedBack({ ...result });
+          if (!result.success) throw new Error(feedback?.message);
           setErrors({ ...initialErrorState });
           setOpen(false);
         }
-      });
-    } catch (error) {
-      console.error(error);
-    }
+      } catch (error) {
+        console.error(error);
+      }
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            size="lg"
-            style={{
-              borderColor: colorLight,
-            }}
-            className="inset-shadow-lg h-10 w-full cursor-pointer items-center justify-start gap-4 px-4 hover:shadow-lg hover:inset-shadow-none focus:shadow-lg focus:inset-shadow-none sm:px-6"
-          >
-            <Plus className="-mt-0.5" />
-            <span>Add Job</span>
-          </Button>
-        }
-      />
+      {showTrigger && (
+        <DialogTrigger
+          render={
+            <Button
+              variant="outline"
+              size="lg"
+              style={{
+                borderColor: color,
+              }}
+              className="inset-shadow-lg h-10 w-full cursor-pointer items-center justify-start gap-4 px-4 hover:shadow-lg hover:inset-shadow-none focus:shadow-lg focus:inset-shadow-none sm:px-6"
+            >
+              <Plus className="-mt-0.5" />
+              <span>Add Job</span>
+            </Button>
+          }
+        />
+      )}
       <DialogContent className="w-11/12 sm:max-w-xl md:max-w-2xl">
-        <DialogTitle className="text-2xl font-bold" render={<h2 />}>
-          New Job!
-        </DialogTitle>
-        <DialogDescription className="text-lg font-semibold text-gray-500">
-          Add a new job
+        <div className="xs:flex-row xs:items-center flex w-[90%] flex-col items-start justify-between">
+          <DialogTitle
+            className="text-lg font-bold sm:text-2xl"
+            render={<h2 />}
+          >
+            {DialogHeaderData[purpose].title}
+          </DialogTitle>
+          {purpose !== 'create' && (
+            <Toggle
+              aria-label="Toggle View or Edit"
+              size="sm"
+              variant="outline"
+              className={cn('cursor-pointer transition-colors', {
+                'hover:border-primary hover:text-primary': purpose === 'view',
+                'border-primary text-primary! hover:border-input hover:text-black!':
+                  purpose === 'edit',
+              })}
+              onClick={() => {
+                if (setPurpose) {
+                  setPurpose((prev) => (prev === 'view' ? 'edit' : 'view'));
+                }
+              }}
+            >
+              {purpose === 'view' ? (
+                <Pencil className="-mt-0.5 h-4 w-4 sm:mr-2" />
+              ) : (
+                <Eye className="-mt-0.5 h-4 w-4 sm:mr-2" />
+              )}
+              <span className="hidden sm:inline-block">
+                {purpose === 'view' ? 'Edit' : 'View'}
+              </span>
+            </Toggle>
+          )}
+        </div>
+        <DialogDescription className="text-xs font-semibold text-gray-500 sm:text-lg">
+          {DialogHeaderData[purpose].description}
         </DialogDescription>
         <div className="h-5 w-full text-center">
           {feedback && !feedback.success && (
@@ -404,7 +497,7 @@ const CreateJobApplicationDialog = ({
         <form onSubmit={handleSubmit}>
           <ScrollArea
             tabIndex={0}
-            className="-mx-4 mb-4 h-[60vh] px-4"
+            className="-mx-4 mb-4 h-[40vh] px-4 md:h-[60vh]"
             viewportClassName="focus-visible:ring-0 focus-visible:outline-none px-1"
           >
             {formFields.map((fieldGroups, index) => (
@@ -434,9 +527,9 @@ const CreateJobApplicationDialog = ({
                         defaultValue={field.defaultValue}
                         placeholder={field.placeholder}
                         className="focus-visible:border-input-focus focus-visible:ring-input-focus/50"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        tabIndex={isPending ? -1 : 0}
+                        disabled={isPending || purpose === 'view'}
+                        aria-disabled={isPending || purpose === 'view'}
+                        tabIndex={isPending || purpose === 'view' ? -1 : 0}
                         onChange={() => handleBlurAndChange(field.id)}
                         onBlur={() => handleBlurAndChange(field.id)}
                       />
@@ -450,9 +543,9 @@ const CreateJobApplicationDialog = ({
                         defaultValue={field.defaultValue}
                         placeholder={field.placeholder}
                         className="focus-visible:border-input-focus focus-visible:ring-input-focus/50 h-10"
-                        disabled={isPending}
-                        aria-disabled={isPending}
-                        tabIndex={isPending ? -1 : 0}
+                        disabled={isPending || purpose === 'view'}
+                        aria-disabled={isPending || purpose === 'view'}
+                        tabIndex={isPending || purpose === 'view' ? -1 : 0}
                         onChange={() => handleBlurAndChange(field.id)}
                         onBlur={() => handleBlurAndChange(field.id)}
                       />
@@ -469,7 +562,7 @@ const CreateJobApplicationDialog = ({
               </FieldGroup>
             ))}
           </ScrollArea>
-          <DialogFooter>
+          <DialogFooter className="xs:flex-row xs:justify-end">
             <DialogClose
               render={
                 <Button
@@ -482,25 +575,33 @@ const CreateJobApplicationDialog = ({
                 </Button>
               }
             />
-            <div
-              className={cn({
-                'cursor-not-allowed': isPending,
-              })}
-            >
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isPending}
-                aria-disabled={isPending}
-                tabIndex={isPending ? -1 : 0}
-                className={cn('hover:bg-primary/90 cursor-pointer px-6')}
+            {purpose !== 'view' && (
+              <div
+                className={cn({
+                  'cursor-not-allowed': isPending,
+                })}
               >
-                {isPending && (
-                  <Spinner data-icon="inline-start" className="-mt-0.5" />
-                )}
-                <span>{isPending ? 'Adding' : 'Add'}</span>
-              </Button>
-            </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isPending}
+                  aria-disabled={isPending}
+                  tabIndex={isPending ? -1 : 0}
+                  className={cn(
+                    'hover:bg-primary/90 max-xs:w-full cursor-pointer px-6',
+                  )}
+                >
+                  {isPending && (
+                    <Spinner data-icon="inline-start" className="-mt-0.5" />
+                  )}
+                  {purpose === 'edit' ? (
+                    <span>{isPending ? 'Updating' : 'Update'}</span>
+                  ) : (
+                    <span>{isPending ? 'Adding' : 'Add'}</span>
+                  )}
+                </Button>
+              </div>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>
@@ -508,4 +609,4 @@ const CreateJobApplicationDialog = ({
   );
 };
 
-export default CreateJobApplicationDialog;
+export default JobApplicationDialog;

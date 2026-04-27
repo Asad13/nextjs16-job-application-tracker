@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
-import dbConnect from '../db';
+import dbConnect from '../db/connect';
 import { initDefaultBoard } from '../init-default-board';
 
 const mongoose = await dbConnect();
