@@ -1,7 +1,6 @@
 import { Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import type { User } from '@/lib/auth/auth-server';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,13 +11,17 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { auth } from '@/lib/auth/auth-server';
+import { headers } from 'next/headers';
 import SignoutBtn from './signout-btn';
 
-interface NavbarProps {
-  user: User | null;
-}
+const Navbar = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-const Navbar = ({ user }: NavbarProps) => {
+  const user = session?.user ?? null;
+
   return (
     <nav className="fixed flex h-14 w-full items-center justify-between border-b bg-white px-4 sm:h-16">
       <div>

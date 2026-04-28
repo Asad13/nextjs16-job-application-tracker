@@ -11,7 +11,14 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { ExternalLink, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  ExternalLink,
+  Eye,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { ReactNode, startTransition, useEffect, useRef, useState } from 'react';
 import {
@@ -30,6 +37,7 @@ import JobApplicationDialog, {
   JobData,
   Purpose,
 } from './job-application-dialog';
+import ConfirmDeleteDialog from './confirm-delete-dialog';
 
 interface KanbanBoardProps {
   board: Board;
@@ -52,6 +60,8 @@ const DroppabaleItem = ({
     group: columnId,
   });
   const [open, setOpen] = useState<boolean>(false);
+  const [openConfirmDeleteDialog, setOpenConfirmDeleteDialog] =
+    useState<boolean>(false);
   const [purpose, setPurpose] = useState<Purpose>('view');
   const { tags, ...rest } = job;
   const jobData = rest as JobData;
@@ -70,15 +80,16 @@ const DroppabaleItem = ({
         purpose={purpose}
         setPurpose={setPurpose}
       />
+      <ConfirmDeleteDialog
+        title="Delete Job"
+        deleteItemInfo={`the job "${job.title}"`}
+        open={openConfirmDeleteDialog}
+        setOpen={setOpenConfirmDeleteDialog}
+        onConfirm={() => deleteJob(job.id)}
+      />
       <Card
         ref={ref}
-        role="button"
-        className="w-full shrink-0 cursor-pointer rounded-md px-2 py-4 shadow-md hover:bg-gray-200 focus:bg-gray-200 active:not-aria-[haspopup]:translate-y-px"
-        onClick={(event) => {
-          event.stopPropagation();
-          setPurpose('view');
-          setOpen(true);
-        }}
+        className="w-full shrink-0 rounded-md px-2 py-4 shadow-md active:bg-gray-200"
       >
         <CardHeader className="flex items-start justify-between">
           <div>
@@ -105,7 +116,25 @@ const DroppabaleItem = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem
-                className="cursor-pointer text-sky-600 hover:bg-sky-200 not-data-[variant=destructive]:hover:**:text-sky-200 focus:bg-sky-200 not-data-[variant=destructive]:focus:**:text-sky-600"
+                className="cursor-pointer text-yellow-600 hover:bg-yellow-200 not-data-[variant=destructive]:hover:**:text-yellow-200 not-data-[variant=destructive]:focus:**:text-yellow-600 focus-visible:bg-yellow-200"
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setPurpose('view');
+                      setOpen(true);
+                    }}
+                  />
+                }
+              >
+                <Eye className="-mt-0.5 mr-2 h-4 w-4" />
+                <span>View Full</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer text-sky-600 hover:bg-sky-200 not-data-[variant=destructive]:hover:**:text-sky-200 not-data-[variant=destructive]:focus:**:text-sky-600 focus-visible:bg-sky-200"
                 render={
                   <Button
                     type="button"
@@ -132,18 +161,7 @@ const DroppabaleItem = ({
                     className="w-full justify-start"
                     onClick={(event) => {
                       event.stopPropagation();
-                      startTransition(async () => {
-                        try {
-                          const result = await deleteJob(job.id);
-                          if (result.success) {
-                            console.log(result.message);
-                          } else {
-                            throw new Error(result.message);
-                          }
-                        } catch (error) {
-                          console.error(error);
-                        }
-                      });
+                      setOpenConfirmDeleteDialog(true);
                     }}
                   />
                 }
