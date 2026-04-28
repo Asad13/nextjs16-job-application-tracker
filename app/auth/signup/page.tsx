@@ -1,6 +1,6 @@
 'use client';
 
-import { createRef, RefObject, useState } from 'react';
+import { createRef, RefObject, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { z, ZodError } from 'zod';
 import { signUp } from '@/lib/auth/auth-client';
+import { toast } from '@/lib/utils/toast';
 
 type FormField = {
   id: 'firstName' | 'lastName' | 'email' | 'password' | 'confirmPassword';
@@ -97,11 +98,12 @@ const formatError = (error: ZodError<Record<string, string>>) => {
 const Signup = () => {
   const router = useRouter();
 
+  const formref = useRef<HTMLFormElement>(null);
+
   const refMap = Object.fromEntries(
     formFields.map((field) => [field.id, createRef<HTMLInputElement>()]),
   ) as Record<keyof FormInputs, RefObject<HTMLInputElement>>;
 
-  const [feedback, setFeedback] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   const [errors, setErrors] = useState<FormErrors>({
@@ -149,8 +151,6 @@ const Signup = () => {
     e.preventDefault();
     if (loading) return;
 
-    setLoading(true);
-
     const values = Object.fromEntries(
       formFields.map((field) => [
         field.id,
@@ -167,6 +167,8 @@ const Signup = () => {
     }
 
     try {
+      setLoading(true);
+
       await signUp.email(
         {
           name: values.firstName,
@@ -176,16 +178,21 @@ const Signup = () => {
         },
         {
           onSuccess: () => {
+            toast.success('Registered successfully');
+            if (formref?.current) formref.current.reset();
             router.push('/auth/signin');
           },
           onError: (ctx) => {
-            setFeedback(ctx.error.message ?? 'Registration unsuccessful');
+            toast.error(
+              `${ctx.error.message ?? 'Unknown error'}. Registration unsuccessful`,
+            );
+            console.error(ctx.error);
           },
         },
       );
     } catch (error) {
+      toast.error('Unknown error. Registration unsuccessful');
       console.error(error);
-      setFeedback('Unknown error');
     } finally {
       setLoading(false);
     }
@@ -202,13 +209,8 @@ const Signup = () => {
             Create an account to start tracking your job applications
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit} method="post">
+        <form ref={formref} onSubmit={handleSubmit} method="post">
           <CardContent className="mb-4">
-            {feedback && (
-              <div className="bg-destructive/15 text-destructive mb-4 rounded-md p-3 text-center text-sm">
-                {feedback}
-              </div>
-            )}
             {formFields.map((field) => (
               <div key={field.id} className="mb-1.5">
                 <Label htmlFor={field.id} className="mb-1 ml-2">

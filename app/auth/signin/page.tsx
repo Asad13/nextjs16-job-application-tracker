@@ -1,6 +1,6 @@
 'use client';
 
-import { createRef, RefObject, useState } from 'react';
+import { createRef, RefObject, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { z, ZodError } from 'zod';
 import { signIn } from '@/lib/auth/auth-client';
+import { toast } from '@/lib/utils/toast';
 
 type FormField = {
   id: 'email' | 'password';
@@ -68,11 +69,12 @@ const formatError = (error: ZodError<Record<string, string>>) => {
 const Signin = () => {
   const router = useRouter();
 
+  const formref = useRef<HTMLFormElement>(null);
+
   const refMap = Object.fromEntries(
     formFields.map((field) => [field.id, createRef<HTMLInputElement>()]),
   ) as Record<keyof FormInputs, RefObject<HTMLInputElement>>;
 
-  const [feedback, setFeedback] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   const [errors, setErrors] = useState<FormErrors>({
@@ -99,8 +101,6 @@ const Signin = () => {
     e.preventDefault();
     if (loading) return;
 
-    setLoading(true);
-
     const values = Object.fromEntries(
       formFields.map((field) => [
         field.id,
@@ -117,6 +117,8 @@ const Signin = () => {
     }
 
     try {
+      setLoading(true);
+
       await signIn.email(
         {
           email: values.email,
@@ -124,17 +126,22 @@ const Signin = () => {
         },
         {
           onSuccess: async () => {
+            toast.success('Logged in successfully');
+            if (formref?.current) formref.current.reset();
             router.push('/dashboard');
             router.refresh();
           },
           onError: (ctx) => {
-            setFeedback(ctx.error.message ?? 'Login unsuccessful');
+            toast.error(
+              `${ctx.error.message ?? 'Unknown error'}. Login unsuccessful`,
+            );
+            console.error(ctx.error);
           },
         },
       );
     } catch (error) {
+      toast.error('Unknown error. Login unsuccessful');
       console.error(error);
-      setFeedback('Unknown error');
     } finally {
       setLoading(false);
     }
@@ -151,13 +158,8 @@ const Signin = () => {
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit} method="post">
+        <form ref={formref} onSubmit={handleSubmit} method="post">
           <CardContent className="mb-4">
-            {feedback && (
-              <div className="bg-destructive/15 text-destructive mb-4 rounded-md p-3 text-center text-sm">
-                {feedback}
-              </div>
-            )}
             {formFields.map((field) => (
               <div key={field.id} className="mb-1.5">
                 <Label htmlFor={field.id} className="mb-1 ml-2">

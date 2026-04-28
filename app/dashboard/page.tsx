@@ -15,9 +15,7 @@ const Dashboard = async () => {
 
   return (
     <div className="flex-1">
-      <Suspense fallback={<p>Loading...</p>}>
-        {session.user.isNewUser && <NewUserWelcomeMsg />}
-      </Suspense>
+      {session.user.isNewUser && <NewUserWelcomeMsg />}
       <div className="container mx-auto p-4 sm:p-6">
         {board ? (
           <>
@@ -27,7 +25,9 @@ const Dashboard = async () => {
               </h2>
               <p className="text-gray-600">{board.description}</p>
             </div>
-            <KanbanBoard key={`${new Date().getTime()}`} board={board} />
+            <Suspense fallback={<p>Loading default board...</p>}>
+              <KanbanBoard key={`${new Date().getTime()}`} board={board} />
+            </Suspense>
           </>
         ) : (
           <p className="px-4 py-6 text-center">No board found...</p>

@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import { auth } from '@/lib/auth/auth-server';
-import { headers } from 'next/headers';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/navbar';
 import { Suspense } from 'react';
+import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,10 +25,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
   return (
     <html
       lang="en"
@@ -41,11 +36,18 @@ export default async function RootLayout({
             <div className="fixed flex h-14 w-full items-center justify-between border-b bg-white px-4 sm:h-16"></div>
           }
         >
-          <Navbar user={session?.user ?? null} />
+          <Navbar />
         </Suspense>
         <div className="flex min-h-screen flex-col pt-14 sm:pt-16">
-          {children}
+          <Suspense fallback={<p>Loading...</p>}>{children}</Suspense>
         </div>
+        <Toaster
+          toastOptions={{
+            classNames: {
+              toast: '!bg-gray-500 !text-white',
+            },
+          }}
+        />
       </body>
     </html>
   );

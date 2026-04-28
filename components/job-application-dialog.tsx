@@ -15,6 +15,7 @@ import { Eye, Pencil, Plus } from 'lucide-react';
 import { Field, FieldGroup, FieldLabel, FieldDescription } from './ui/field';
 import { Input } from './ui/input';
 import {
+  useRef,
   createRef,
   Dispatch,
   RefObject,
@@ -35,6 +36,7 @@ import {
 import { FeedbackBase } from '@/types/api';
 import { UpdateJobApplicationInputType } from '@/lib/validations/job-application';
 import { Toggle } from './ui/toggle';
+import { toast } from '@/lib/utils/toast';
 
 type ErrorKey = 'required' | 'maxLength';
 type SchemaType = z.core.JSONSchema.StringSchema['type'] | undefined;
@@ -333,6 +335,8 @@ const JobApplicationDialog = ({
 }: JobApplicationDialogProps) => {
   const { data: fullSession } = useSession();
 
+  const formref = useRef<HTMLFormElement>(null);
+
   if (jobData && purpose !== 'create') {
     formFields.forEach((fieldGroup) => {
       fieldGroup.forEach((field) => {
@@ -347,7 +351,6 @@ const JobApplicationDialog = ({
     });
   }
 
-  const [feedback, setFeedBack] = useState<FeedbackBase | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const refMap = Object.fromEntries(
@@ -387,7 +390,7 @@ const JobApplicationDialog = ({
 
   const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
-
+    if (isPending) return;
     if (purpose === 'view') return;
 
     const values = Object.fromEntries(
@@ -419,8 +422,12 @@ const JobApplicationDialog = ({
         }
 
         if (result) {
-          setFeedBack({ ...result });
-          if (!result.success) throw new Error(feedback?.message);
+          if (!result.success) {
+            toast.error(result.message);
+            throw new Error(result.message);
+          }
+          toast.success(result.message);
+          if (formref?.current) formref.current.reset();
           setErrors({ ...initialErrorState });
           setOpen(false);
         }
@@ -487,14 +494,7 @@ const JobApplicationDialog = ({
         <DialogDescription className="text-xs font-semibold text-gray-500 sm:text-lg">
           {DialogHeaderData[purpose].description}
         </DialogDescription>
-        <div className="h-5 w-full text-center">
-          {feedback && !feedback.success && (
-            <p className={cn('text-destructive text-base font-bold')}>
-              {feedback.message}
-            </p>
-          )}
-        </div>
-        <form onSubmit={handleSubmit}>
+        <form ref={formref} onSubmit={handleSubmit}>
           <ScrollArea
             tabIndex={0}
             className="-mx-4 mb-4 h-[40vh] px-4 md:h-[60vh]"
@@ -570,6 +570,9 @@ const JobApplicationDialog = ({
                   variant="secondary"
                   size="lg"
                   className="cursor-pointer bg-gray-400/15 px-6 hover:bg-gray-400/25"
+                  onClick={() => {
+                    if (formref?.current) formref.current.reset();
+                  }}
                 >
                   Close
                 </Button>
